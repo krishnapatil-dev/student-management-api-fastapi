@@ -65,6 +65,66 @@ def get_students():
     conn.close()
     return [row_to_dict(row) for row in rows]
 
+@app.delete("/students")
+def delete_all_students(confirm: bool = False):
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Set confirm=true to delete all students")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM students")
+    conn.commit()
+    conn.close()
+
+    return {"message": "All students deleted"}
+
+@app.get("/students/topper")
+def topper_students():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM students ORDER BY marks DESC LIMIT 3"
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [row_to_dict(r) for r in rows]
+        
+
+@app.get("/students/fail")
+def fail_students():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM students WHERE marks < 40 ORDER BY marks DESC"
+    )
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    return [row_to_dict(r) for r in rows]
+    
+@app.get("/students/average")
+def average_students():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT AVG(marks) from students"
+    )
+    avg = cursor.fetchone()[0]
+    conn.close()
+
+    if not avg:
+        raise HTTPException(status_code=404, detail="Student not found")
+            
+    return {"average_marks" : round(avg,2)}
+
 @app.get("/students/{student_id}")
 def get_student(student_id: int):
     conn = get_db()
